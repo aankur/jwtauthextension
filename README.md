@@ -29,47 +29,44 @@ Currently, only HS256 is supported. We enrich the client context field `Auth` wi
 
 ```yaml
 extensions:
-  jwt:
+  jwtauthextension:
     # The secret used to validate the token
     secret: "secret"
 
 receivers:
   otlp:
-    protocols:
-      grpc:
-        # Add auth settings to the receiver
+    http:
         auth:
-          authenticator: jwt
+          authenticator: jwtauthextension
 
 processors:
 
 exporters:
-  logging:
-    logLevel: debug
+  debug
 
 service:
   # Enable the extension
-  extensions: [jwt]
+  extensions: [jwtauthextension]
   pipelines:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 </td><td>
 
 ```yaml
 extensions:
-  jwt:
+  jwtauthextension:
     secret: "secret"
 
 receivers:
   otlp:
     protocols:
-      grpc:
+      http:
         auth:
-          authenticator: jwt
+          authenticator: jwtauthextension
 
 processors:
   # Extract the project id from the auth context
@@ -80,17 +77,16 @@ processors:
         action: insert
 
 exporters:
-  logging:
-    logLevel: debug
+  debug
 
 service:
-  extensions: [jwt]
+  extensions: [jwtauthextension]
   pipelines:
     traces:
       receivers: [otlp]
       # Apply the processor
       processors: [attributes/from_auth_context]
-      exporters: [logging]
+      exporters: [debug]
 ```
 
 </tr></table>
@@ -99,7 +95,7 @@ service:
 
 The following settings are required:
 
-- `secret` (string): The secret used to validate the token. You can also use an environment variable `${ENV_VAR_NAME}`.
+- `secret` (string): The secret used to validate the token. You can also use an environment variable `${ENV_OTEL_JWT_KEY}`.
 - `attribute` (string): The header name to look for auth data. Defaults to `authorization`.
 
 ## Client support
