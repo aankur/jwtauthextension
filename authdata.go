@@ -17,6 +17,7 @@ package jwtauthextension // Package jwtauthextension import "github.com/aankur/j
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.opentelemetry.io/collector/client"
+	"strings"
 )
 
 var _ client.AuthData = (*authData)(nil)
@@ -28,6 +29,16 @@ type authData struct {
 func (a *authData) GetAttribute(name string) interface{} {
 	if val, ok := a.jwtClaims[name]; ok {
 		return val
+	}
+	if strings.Contains(name, ".") {
+		parts := strings.SplitN(name, ".", 2)
+		topKey := parts[0]
+		nestedKey := parts[1]
+		if m, ok := a.jwtClaims[topKey].(map[string]interface{}); ok {
+			if val, exists := m[nestedKey]; exists {
+				return val
+			}
+		}
 	}
 	return nil
 }
