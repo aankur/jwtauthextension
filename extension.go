@@ -16,6 +16,7 @@ package jwtauthextension // Package jwtauthextension import "github.com/aankur/j
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"go.opentelemetry.io/collector/extension"
@@ -47,7 +48,7 @@ var (
 )
 
 func newExtension(cfg *Config, logger *zap.Logger) (*jwtExtension, error) {
-	if cfg.JWTSecret == "" {
+	if cfg.JWTSecret == "" && cfg.Base64JwtSecret == "" {
 		return nil, errNoJWTSecretProvided
 	}
 
@@ -55,10 +56,21 @@ func newExtension(cfg *Config, logger *zap.Logger) (*jwtExtension, error) {
 		cfg.Attribute = defaultAttribute
 	}
 
+	var secret []byte
+	if cfg.Base64JwtSecret != "" {
+		var err error
+		secret, err = base64.StdEncoding.DecodeString(cfg.Base64JwtSecret)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		secret = []byte(cfg.JWTSecret)
+	}
+
 	oe := &jwtExtension{
 		cfg:       cfg,
 		logger:    logger,
-		jwtSecret: []byte(cfg.JWTSecret),
+		jwtSecret: secret,
 	}
 
 	return oe, nil

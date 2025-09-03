@@ -20,6 +20,9 @@ type Config struct {
 	// The attribute (header name) to look for auth data. Optional, default value: "authorization".
 	Attribute string `mapstructure:"attribute"`
 
-	// The JWT secret to use for validation. Required.
+	// The JWT secret to use for validation.
 	JWTSecret string `mapstructure:"secret"`
+
+	// The JWT secret to use for validation.
+	Base64JwtSecret string `mapstructure:"base64_jwt_secret"`
 }
