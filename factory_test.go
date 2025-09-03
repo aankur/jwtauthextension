@@ -16,6 +16,7 @@ package jwtauthextension
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,8 +41,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.JWTSecret = "secret"
-
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	typ := component.MustNewType("jwtauthextension")
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }

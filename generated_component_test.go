@@ -4,6 +4,7 @@ package jwtauthextension
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,9 +24,10 @@ func TestComponentLifecycle(t *testing.T) {
 	}
 
 	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	t.Run("shutdown", func(t *testing.T) {
-		e, err := factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+		typ := component.MustNewType("jwtauthextension")
+		e, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
 		err = e.Shutdown(context.Background())
 		require.NoError(t, err)

@@ -51,6 +51,9 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 
 		// This is a custom claim
 		"projectID": "123456789",
+		"user": map[string]interface{}{
+			"requestID": "123456789",
+		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, cc)
 
@@ -68,7 +71,8 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("sub"))
 	assert.Equal(t, []any{"somebody_else"}, clientInfo.Auth.GetAttribute("aud"))
 	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("projectID"))
-	assert.Len(t, clientInfo.Auth.GetAttributeNames(), 7) // 6 standard claims + 1 custom claim
+	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("user.requestID"))
+	assert.Len(t, clientInfo.Auth.GetAttributeNames(), 8) // 6 standard claims + 2 custom claim
 
 	// test, upper-case header
 	ctx, err = p.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", signingString)}})
@@ -82,7 +86,8 @@ func TestJWTAuthenticationSucceeded(t *testing.T) {
 	assert.Equal(t, "somebody", clientInfo.Auth.GetAttribute("sub"))
 	assert.Equal(t, []any{"somebody_else"}, clientInfo.Auth.GetAttribute("aud"))
 	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("projectID"))
-	assert.Len(t, clientInfo.Auth.GetAttributeNames(), 7) // 6 standard claims + 1 custom claim
+	assert.Equal(t, "123456789", clientInfo.Auth.GetAttribute("user.requestID"))
+	assert.Len(t, clientInfo.Auth.GetAttributeNames(), 8) // 6 standard claims + 2 custom claim
 }
 
 func TestJWTExpired(t *testing.T) {

@@ -16,14 +16,16 @@ package jwtauthextension // Package jwtauthextension import "github.com/aankur/j
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
 	"go.uber.org/zap"
 )
 
@@ -34,14 +36,19 @@ type jwtExtension struct {
 }
 
 var (
+	_ extension.Extension  = (*jwtExtension)(nil)
+	_ extensionauth.Server = (*jwtExtension)(nil)
+)
+
+var (
 	errNoJWTSecretProvided               = errors.New("no jwt secret provided for the JWT configuration")
 	errJWTInvalid                        = errors.New("the JWT is invalid")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) (auth.Server, error) {
-	if cfg.JWTSecret == "" {
+func newExtension(cfg *Config, logger *zap.Logger) (*jwtExtension, error) {
+	if cfg.JWTSecret == "" && cfg.Base64JwtSecret == "" {
 		return nil, errNoJWTSecretProvided
 	}
 
@@ -49,21 +56,36 @@ func newExtension(cfg *Config, logger *zap.Logger) (auth.Server, error) {
 		cfg.Attribute = defaultAttribute
 	}
 
+	var secret []byte
+	if cfg.Base64JwtSecret != "" {
+		var err error
+		secret, err = base64.StdEncoding.DecodeString(cfg.Base64JwtSecret)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		secret = []byte(cfg.JWTSecret)
+	}
+
 	oe := &jwtExtension{
 		cfg:       cfg,
 		logger:    logger,
-		jwtSecret: []byte(cfg.JWTSecret),
+		jwtSecret: secret,
 	}
 
-	return auth.NewServer(auth.WithServerStart(oe.start), auth.WithServerAuthenticate(oe.authenticate)), nil
+	return oe, nil
 }
 
-func (e *jwtExtension) start(context.Context, component.Host) error {
+func (e *jwtExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-// authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
-func (e *jwtExtension) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (e *jwtExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
+func (e *jwtExtension) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	metadata := client.NewMetadata(headers)
 	authHeaders := metadata.Get(e.cfg.Attribute)
 	if len(authHeaders) == 0 {
